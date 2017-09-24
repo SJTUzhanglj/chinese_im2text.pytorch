@@ -24,6 +24,13 @@ $ python scripts/prepro_ai_challenger.py
 ```
 
 `json_preprocess.py` will first transform the AI challenger Image Caption_json to mscoco json format. Then map all words that occur <= 5 times to a special `UNK` token, and create a vocabulary for all the remaining words. The image information and vocabulary are dumped into `coco_ai_challenger_raw.json`.
+This file also generates the `coco_val_caption_validation_annotations_20170910.json` for evaluation metric calcuation, you can find the json files in the following folder:
+```bash
+# For metric calcuation
+chinese_im2text.pytorch/caption_eval/data/coco_val_caption_validation_annotations_20170910.json
+# For preprocessing
+chinese_im2text.pytorch/caption_eval/data/coco_caption_validation_annotations_20170910.json
+```
 
 `prepro_ai_challenger.py` extract the resnet101 features (both fc feature and last conv feature) of each image. The features are saved in `coco_ai_challenger_talk_fc.h5` and `coco_ai_challenger_talk_att.h5`, and resulting files are about 359GB.
 
@@ -124,6 +131,12 @@ $ python -m SimpleHTTPServer
 Now visit `localhost:8000` in your browser and you should see your predicted captions.
 
 ### Evaluate on validation split
+
+For evaluation, you can use the offical evaluation tool provide by AIChallenger. And I modified their code, and you can find it in
+```bash
+caption_eval
+```
+The GT annotations are also provided.
 
 ```bash
 $ python eval.py --dump_images 0 --num_images 5000 --model model.pth --infos_path infos.pkl --language_eval 1 

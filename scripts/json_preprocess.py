@@ -7,6 +7,7 @@ import os
 import argparse
 import json
 from PIL import Image
+import jieba
 
 # lets download the annotations from http://mscoco.org/dataset/#download
 def coco_preprocess():
@@ -109,6 +110,9 @@ def ai_challenger_preprocess():
 
     json.dump(out, open('coco_ai_challenger_raw.json', 'w'))
 
+'''
+Generate json file for preprocessing!!!
+'''
 def convert2coco(caption_json, img_dir):
     dataset = json.load(open(caption_json, 'r'))
     imgdir = img_dir
@@ -148,11 +152,63 @@ def convert2coco(caption_json, img_dir):
         json.dump(coco, fid)
     print('Saved to {}'.format(output_file))
 
+'''
+Generate json file for evaluation
+'''
+def convert2coco_eval(caption_json, img_dir):
+    dataset = json.load(open(caption_json, 'r'))
+    imgdir = img_dir
+
+    coco = dict()
+    coco[u'info'] = { u'desciption':u'AI challenger image caption in mscoco format'}
+    coco[u'licenses'] = ['Unknown', 'Unknown']
+    coco[u'images'] = list()
+    coco[u'annotations'] = list()
+    coco[u'type'] = u'captions'
+    for ind, sample in enumerate(dataset):
+        #img = Image.open(os.path.join(imgdir, sample['image_id']))
+        #width, height = img.size
+        width, height = 224, 224
+
+        coco_img = {}
+        coco_img[u'license'] = 0
+        coco_img[u'file_name'] = os.path.split(img_dir)[-1]+'/'+sample['image_id']
+        coco_img[u'width'] = width
+        coco_img[u'height'] = height
+        coco_img[u'date_captured'] = 0
+        coco_img[u'coco_url'] = sample['url']
+        coco_img[u'flickr_url'] = sample['url']
+        coco_img['id'] = ind
+
+        coco_anno = {}
+        coco_anno[u'image_id'] = ind
+        coco_anno[u'id'] = ind
+        coco_anno[u'caption'] = sample['caption']
+
+        coco[u'images'].append(coco_img)
+        for coco_anno_ in coco_anno['caption']:
+            coco_anno_s = {}
+            coco_anno_s[u'image_id'] = coco_anno[u'image_id']
+            coco_anno_s[u'id'] = coco_anno[u'id']
+            w = jieba.cut(coco_anno_.strip(), cut_all=False)
+            p = ' '.join(w)
+            coco_anno_ = p
+            coco_anno_s[u'caption'] = coco_anno_
+            coco[u'annotations'].append(coco_anno_s)
+
+        print('{}/{}'.format(ind, len(dataset)))
+
+    output_file = os.path.join(os.path.dirname(caption_json), 'coco_val_'+os.path.basename(caption_json))
+    with open(output_file, 'w') as fid:
+        json.dump(coco, fid)
+    print('Saved to {}'.format(output_file))
+
 if __name__ == "__main__":
     train_caption_json = '/home/jxgu/github/chinese_im2text.pytorch/data/ai_challenger/ai_challenger_caption_train_20170902/caption_train_annotations_20170902.json'
     train_img_dir = '/home/jxgu/github/chinese_im2text.pytorch/data/ai_challenger/ai_challenger_caption_train_20170902/caption_train_images_20170902'
-    val_caption_json = '/home/jxgu/github/chinese_im2text.pytorch/data/ai_challenger/ai_challenger_caption_validation_20170910/caption_validation_annotations_20170910.json'
+    val_caption_json = '/mnt/d2/dataset/ai_challenger/caption_validation_annotations_20170910.json'
     val_img_dir = '/home/jxgu/github/chinese_im2text.pytorch/data/ai_challenger/ai_challenger_caption_validation_20170910/caption_validation_images_20170910'
     convert2coco(train_caption_json, train_img_dir)
     convert2coco(val_caption_json, val_img_dir)
     ai_challenger_preprocess()
+    convert2coco_eval(val_caption_json, val_img_dir)
